@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Admin</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f5f5f5;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+h1{
+text-align:center;
+margin-bottom:20px;
+}
+
+.admin-layout{
+display:grid;
+grid-template-columns:250px 1fr;
+gap:20px;
+}
+
+@media(max-width:700px){
+.admin-layout{
+grid-template-columns:1fr;
+}
+}
+
+/* CATEGORY PANEL */
+
+.category-panel{
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.category{
+padding:10px;
+border-radius:6px;
+margin-bottom:8px;
+background:#eee;
+cursor:pointer;
+}
+
+.category.active{
+background:#222;
+color:white;
+}
+
+/* ITEMS PANEL */
+
+.items-panel{
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.item-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px 0;
+border-bottom:1px solid #eee;
+}
+
+.item-info{
+display:flex;
+flex-direction:column;
+}
+
+.item-actions button{
+margin-left:8px;
+border:none;
+background:#eee;
+padding:6px 10px;
+border-radius:5px;
+cursor:pointer;
+}
+
+.add-btn{
+margin-top:15px;
+padding:10px;
+border:none;
+background:#222;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+.form-box{
+margin-top:15px;
+padding:15px;
+background:#fafafa;
+border-radius:8px;
+}
+
+.form-box input,
+.form-box textarea{
+width:100%;
+padding:8px;
+margin-bottom:10px;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+.form-actions{
+display:flex;
+gap:10px;
+}
+
+.form-actions button{
+flex:1;
+padding:8px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+.save-btn{
+background:#222;
+color:white;
+}
+
+.cancel-btn{
+background:#ddd;
+}
+
+.category-controls{
+margin-bottom:10px;
+}
+
+.category-controls button{
+margin-right:5px;
+border:none;
+background:#eee;
+padding:6px 10px;
+border-radius:5px;
+cursor:pointer;
+}
+
+.hidden-label{
+font-size:12px;
+color:#999;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Menu Admin</h1>
+
+<div class="admin-layout">
+
+<!-- CATEGORY PANEL -->
+
+<div class="category-panel">
+
+<h3>Categories</h3>
+
+<div id="categoryList"></div>
+
+<button class="add-btn" onclick="newCategory()">+ New Category</button>
+
+</div>
+
+
+<!-- ITEMS PANEL -->
+
+<div class="items-panel">
+
+<h3 id="categoryTitle">Select Category</h3>
+
+<div id="categoryControls" class="category-controls"></div>
+
+<div id="itemsList"></div>
+
+<button class="add-btn" onclick="showAddForm()">+ Add Item</button>
+
+<div id="formArea"></div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+let menuData = JSON.parse(localStorage.getItem("menuData")) || {};
+let currentCategory=null;
+
+function saveData(){
+localStorage.setItem("menuData",JSON.stringify(menuData));
+}
+
+function renderCategories(){
+
+let list=document.getElementById("categoryList");
+list.innerHTML="";
+
+Object.keys(menuData).forEach(cat=>{
+
+let div=document.createElement("div");
+div.className="category";
+
+if(cat===currentCategory) div.classList.add("active");
+
+let label = cat;
+if(menuData[cat].hidden) label += " (Hidden)";
+
+div.innerText=label;
+
+div.onclick=()=>{
+currentCategory=cat;
+renderCategories();
+renderItems();
+};
+
+list.appendChild(div);
+
+});
+
+}
+
+function newCategory(){
+
+let name=prompt("Category name");
+
+if(!name) return;
+
+if(!menuData[name]){
+menuData[name]={hidden:false,items:[]};
+saveData();
+renderCategories();
+}
+
+}
+
+function renderItems(){
+
+let list=document.getElementById("itemsList");
+let title=document.getElementById("categoryTitle");
+let controls=document.getElementById("categoryControls");
+
+if(!currentCategory){
+title.innerText="Select Category";
+list.innerHTML="";
+controls.innerHTML="";
+return;
+}
+
+let catData=menuData[currentCategory];
+
+title.innerText=currentCategory;
+
+controls.innerHTML=`
+
+<button onclick="renameCategory()">Rename</button>
+<button onclick="toggleCategory()">${catData.hidden?"Unhide":"Hide"}</button>
+<button onclick="deleteCategory()">Delete</button>
+
+`;
+
+list.innerHTML="";
+
+catData.items.forEach((item,i)=>{
+
+let row=document.createElement("div");
+row.className="item-row";
+
+let label=item.name;
+
+if(item.hidden){
+label += " (Hidden)";
+}
+
+row.innerHTML=`
+
+<div class="item-info">
+<strong>${label}</strong>
+<span>₹${item.price}</span>
+<small>${item.description||""}</small>
+</div>
+
+<div class="item-actions">
+<button onclick="editItem(${i})">Edit</button>
+<button onclick="toggleItem(${i})">${item.hidden?"Unhide":"Hide"}</button>
+<button onclick="deleteItem(${i})">Delete</button>
+</div>
+
+`;
+
+list.appendChild(row);
+
+});
+
+}
+
+function renameCategory(){
+
+let newName=prompt("New category name",currentCategory);
+
+if(!newName) return;
+
+menuData[newName]=menuData[currentCategory];
+delete menuData[currentCategory];
+
+currentCategory=newName;
+
+saveData();
+renderCategories();
+renderItems();
+
+}
+
+function toggleCategory(){
+
+menuData[currentCategory].hidden=!menuData[currentCategory].hidden;
+
+saveData();
+renderCategories();
+renderItems();
+
+}
+
+function deleteCategory(){
+
+if(!confirm("Delete this category and all items?")) return;
+
+delete menuData[currentCategory];
+currentCategory=null;
+
+saveData();
+renderCategories();
+renderItems();
+
+}
+
+function showAddForm(){
+
+if(!currentCategory) return alert("Select category first");
+
+let area=document.getElementById("formArea");
+
+area.innerHTML=`
+
+<div class="form-box">
+
+<input id="dishName" placeholder="Dish name">
+
+<input id="dishPrice" placeholder="Price">
+
+<textarea id="dishDesc" placeholder="Description (optional)"></textarea>
+
+<div class="form-actions">
+<button class="save-btn" onclick="addItem()">Save</button>
+<button class="cancel-btn" onclick="closeForm()">Cancel</button>
+</div>
+
+</div>
+
+`;
+
+}
+
+function closeForm(){
+document.getElementById("formArea").innerHTML="";
+}
+
+function addItem(){
+
+let name=document.getElementById("dishName").value;
+let price=document.getElementById("dishPrice").value;
+let desc=document.getElementById("dishDesc").value;
+
+if(!name || !price) return alert("Fill required fields");
+
+menuData[currentCategory].items.push({
+name:name,
+price:price,
+description:desc,
+hidden:false
+});
+
+saveData();
+renderItems();
+closeForm();
+
+}
+
+function editItem(i){
+
+let item=menuData[currentCategory].items[i];
+
+let name=prompt("Dish name",item.name);
+let price=prompt("Price",item.price);
+let desc=prompt("Description",item.description||"");
+
+menuData[currentCategory].items[i]={
+name:name,
+price:price,
+description:desc,
+hidden:item.hidden
+};
+
+saveData();
+renderItems();
+
+}
+
+function toggleItem(i){
+
+menuData[currentCategory].items[i].hidden=!menuData[currentCategory].items[i].hidden;
+
+saveData();
+renderItems();
+
+}
+
+function deleteItem(i){
+
+if(!confirm("Delete item?")) return;
+
+menuData[currentCategory].items.splice(i,1);
+
+saveData();
+renderItems();
+
+}
+
+renderCategories();
+
+</script>
+
+</body>
+</html>
