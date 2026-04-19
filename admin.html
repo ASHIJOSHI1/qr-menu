@@ -178,7 +178,7 @@ width:100%;
 height:100%;
 background:rgba(0,0,0,0.5);
 
-justify-content:center;
+justify-content:flex-start;
 align-items:center;
 
 padding:20px;
@@ -198,6 +198,8 @@ width:100%;
 max-width:420px;
 box-sizing:border-box;
 box-shadow:0 10px 35px rgba(0,0,0,0.15);
+
+margin-top: 60px;
 }
 
 .modal-box input,
@@ -249,7 +251,34 @@ border-radius:6px;
 display:none;
 }
 
+.drag-handle {
+    cursor: grab;
+    font-size: 23px;
+    color: black;
+    margin-left: 10px;
+    line-height: 1;
+}
+.drag-ghost {
+    opacity: 0.3;
+}
+
+.drag-chosen {
+    transform: scale(1.04);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    background: white;
+}
+
+.drag-dragging {
+    transform: rotate(1deg);
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 </head>
 
 <body>
@@ -368,15 +397,15 @@ label+=" ("+count+")";
 
 let div=document.createElement("div");
 div.className="category";
+div.setAttribute("data-name", cat);
 
 if(cat===currentCategory) div.classList.add("active");
 
 div.innerHTML=`
-<span>${label}</span>
-<span style="display:flex;gap:4px;">
-<button onclick="event.stopPropagation();moveCategory('${cat}',-1)">↑</button>
-<button onclick="event.stopPropagation();moveCategory('${cat}',1)">↓</button>
-</span>
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+    <span>${label}</span>
+    <span class="drag-handle">≡</span>
+</div>
 `;
 
 div.onclick=()=>{
@@ -387,6 +416,39 @@ renderItems();
 
 list.appendChild(div);
 
+});
+
+new Sortable(list, {
+    animation: 150,
+    handle: ".drag-handle",
+
+    delay: 800,
+    delayOnTouchOnly: true,
+
+    ghostClass: "drag-ghost",
+    chosenClass: "drag-chosen",
+    dragClass: "drag-dragging",
+
+    onEnd: function () {
+
+        let newOrder = [];
+        let items = document.querySelectorAll("#categoryList .category");
+
+        items.forEach(el => {
+            let name = el.getAttribute("data-name");
+            newOrder.push(name);
+        });
+
+        let newData = {};
+
+        newOrder.forEach(cat => {
+            newData[cat] = menuData[cat];
+        });
+
+        menuData = newData;
+
+        saveData();
+    }
 });
 
 }
@@ -538,6 +600,47 @@ function closeForm(){
 document.getElementById("formArea").innerHTML="";
 }
 
+function compressImage(file, callback){
+
+let reader = new FileReader();
+
+reader.onload = function(e){
+
+let img = new Image();
+
+img.onload = function(){
+
+let canvas = document.createElement("canvas");
+let ctx = canvas.getContext("2d");
+
+let maxWidth = 600;
+
+let scale = maxWidth / img.width;
+
+canvas.width = maxWidth;
+canvas.height = img.height * scale;
+
+ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+canvas.toBlob(function(blob){
+
+if(blob){
+callback(blob);
+}else{
+showToast("Image compression failed");
+}
+
+}, "image/jpeg", 0.7); // quality 70%
+
+};
+
+img.src = e.target.result;
+
+};
+
+reader.readAsDataURL(file);
+}
+
 /* ADD ITEM */
 
 function addItem(){
@@ -547,28 +650,84 @@ let price=document.getElementById("dishPrice").value;
 let desc=document.getElementById("dishDesc").value;
 let related=document.getElementById("dishRelated").value;
 
-if(!name||!price){
+let input = document.getElementById("dishImage");
+let file = input.files && input.files[0];
+
+// validation FIRST
+if(!name || !price){
 showToast("Fill required");
 return;
 }
 
-price=parseFloat(price).toFixed(2);
+// if image → compress
+if(file){
+
+compressImage(file, function(compressedFile){
+
+saveItem(name, price, desc, related, compressedFile);
+
+});
+
+return;
+
+}
+
+// no image → normal save
+saveItem(name, price, desc, related, null);
+
+}
+
+function saveItem(name, price, desc, related, file){
+
+price = parseFloat(price).toFixed(2);
+
+if(file){
+
+let reader = new FileReader();
+
+reader.onload = function(e){
 
 menuData[currentCategory].items.push({
 name,
 price,
-description:desc,
+description: desc,
 related,
-hidden:false
+image: e.target.result,   // ✅ BASE64 STORED HERE
+hidden: false
 });
 
 saveData();
 renderItems();
 renderCategories();
 closeForm();
+
+showToast("Item added");
+
+};
+
+reader.readAsDataURL(file);
+
+}else{
+
+menuData[currentCategory].items.push({
+name,
+price,
+description: desc,
+related,
+image: null,   // no image
+hidden: false
+});
+
+saveData();
+renderItems();
+renderCategories();
+closeForm();
+
 showToast("Item added");
 
 }
+}
+
 
 /* ITEMS RENDER */
 
@@ -603,19 +762,24 @@ if(item.hidden) name+=" (Hidden)";
 let row=document.createElement("div");
 
 row.className="item-row";
+row.setAttribute("data-index", i);
 
-row.innerHTML=`
-<div class="item-info">
-<strong>${name}</strong>
-<span>₹${item.price}</span>
-</div>
+row.innerHTML = `
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
 
-<div class="item-actions">
-<button onclick="moveItem(${i},-1)">↑</button>
-<button onclick="moveItem(${i},1)">↓</button>
-<button onclick="editItem(${i})">Edit</button>
-<button onclick="toggleItem(${i})">${item.hidden ? "Unhide" : "Hide"}</button>
-<button onclick="deleteItem(${i})">Delete</button>
+    <div class="item-info">
+        <strong>${name}</strong>
+        <span>₹${item.price}</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="editItem(${i})">Edit</button>
+        <button onclick="toggleItem(${i})">${item.hidden ? "Unhide" : "Hide"}</button>
+        <button onclick="deleteItem(${i})">Delete</button>
+
+        <span class="drag-handle">≡</span>
+    </div>
+
 </div>
 `;
 
@@ -623,7 +787,43 @@ list.appendChild(row);
 
 });
 
+// 👇 SORTABLE HERE
+
+if(window.itemsSortable){
+    window.itemsSortable.destroy();
 }
+
+window.itemsSortable = new Sortable(document.getElementById("itemsList"), {
+    animation: 150,
+    handle: ".drag-handle",
+
+    delay: 800,
+    delayOnTouchOnly: true,
+
+    ghostClass: "drag-ghost",
+    chosenClass: "drag-chosen",
+    dragClass: "drag-dragging",
+
+    onEnd: function () {
+
+        let newOrder = [];
+        let items = document.querySelectorAll("#itemsList .item-row");
+
+        items.forEach(el => {
+            let index = el.getAttribute("data-index");
+            newOrder.push(menuData[currentCategory].items[index]);
+        });
+
+        menuData[currentCategory].items = newOrder;
+
+        saveData();
+        renderItems(); // ✅ keep this for items
+    }
+});
+
+} // ← function ends here
+
+
 
 /* EDIT ITEM */
 
@@ -844,6 +1044,7 @@ list.appendChild(row);
 }
 
 renderCategories();
+
 
 </script>
 
