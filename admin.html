@@ -94,13 +94,36 @@ align-items:center;
 flex-wrap:nowrap;
 }
 
-.item-actions button{
-border:none;
-background:#eee;
-padding:7px 10px;
-border-radius:6px;
-cursor:pointer;
-font-size:12px;
+.action-btn {
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.action-btn svg {
+    width: 21px !important;
+    height: 21px !important;
+}
+
+/* Camera button icon */
+button svg {
+    stroke: white;
+    width: 20px;
+    height: 20px;
+}
+
+button:hover {
+    background: #444;
+}
+
+.action-btn:hover {
+    background: #eee;
+}
+
+.action-btn.delete:hover {
+    background: #ffebeb;
 }
 
 .add-btn{
@@ -124,6 +147,11 @@ max-width:420px;
 margin-left:auto;
 margin-right:auto;
 box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+
+.image-row {
+    margin-top: 12px;
+    margin-bottom: 15px;
 }
 
 .form-box input,
@@ -206,6 +234,26 @@ box-shadow:0 10px 35px rgba(0,0,0,0.15);
 margin-top: 60px;
 }
 
+.crop-wrapper {
+    width: 100%;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+#cropImage {
+    width: 100%;
+    display: block;
+}
+
+#cropModal .modal-box {
+    max-width: 400px;
+}
+
+#cropImage {
+    background: #000;
+    border-radius: 8px;
+}
+
 .modal-box input,
 .modal-box textarea,
 .modal-box select{
@@ -258,9 +306,12 @@ display:none;
 .drag-handle {
     cursor: grab;
     font-size: 23px;
-    color: black;
     margin-left: 10px;
     line-height: 1;
+
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .drag-ghost {
     opacity: 0.3;
@@ -282,6 +333,11 @@ display:none;
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
 
 </head>
 
@@ -342,6 +398,48 @@ display:none;
 
 <input id="modalImage" type="file" accept="image/*" style="margin-top:12px;display:none;">
 
+<div class="image-row" style="display:flex;gap:8px;align-items:center;">
+
+    <!-- Hidden input (gallery) -->
+    <input id="editDishImage" type="file" accept="image/*" style="display:none;">
+
+    <!-- Hidden input (camera) -->
+    <input id="editDishCamera" type="file" accept="image/*" capture="environment" style="display:none;">
+
+    <!-- Fake button -->
+    <div onclick="document.getElementById('editDishImage').click()" 
+         style="flex:1;padding:11px;border:1px solid #ddd;border-radius:7px;cursor:pointer;">
+        Choose Image
+    </div>
+
+    <!-- Camera button -->
+    <button type="button"
+    onclick="document.getElementById('editDishCamera').click()"
+    style="
+        width:42px;
+        height:42px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border:none;
+        background:#222;
+        border-radius:8px;
+        cursor:pointer;
+    ">
+    <i data-lucide="camera"></i>
+</button>
+
+</div>
+
+<img id="editPreviewImage" style="
+    width:100%;
+    max-height:200px;
+    object-fit:cover;
+    border-radius:8px;
+    display:none;
+    margin-top:10px;
+">
+
 <div class="modal-actions">
 <button onclick="closeInputModal()">Cancel</button>
 <button onclick="saveModal()">Save</button>
@@ -361,6 +459,22 @@ display:none;
 </div>
 
 <div id="toast"></div>
+
+<div id="cropModal" class="modal">
+<div class="modal-box">
+<h3>Crop Image</h3>
+
+<div class="crop-wrapper">
+    <img id="cropImage">
+</div>
+
+<div class="modal-actions">
+<button onclick="closeCrop()">Cancel</button>
+<button onclick="applyCrop()">Apply</button>
+</div>
+
+</div>
+</div>
 
 <script>
 
@@ -512,6 +626,38 @@ item.description = document.getElementById("modalInput3").value;
 let related=document.getElementById("modalRelated");
 if(related) item.related=related.value;
 
+// ✅ IMAGE FIX START
+
+let input = document.getElementById("editDishImage");
+let file = croppedBlob ? croppedBlob : (input.files && input.files[0]);
+
+if(file){
+
+    compressImage(file, function(compressedFile){
+
+        let reader = new FileReader();
+
+        reader.onload = function(e){
+
+            item.image = e.target.result; // ✅ update image
+
+            saveData();
+            renderItems();
+            closeInputModal();
+            showToast("Item updated");
+
+        };
+
+        reader.readAsDataURL(compressedFile);
+
+    });
+
+    editIndex = null;
+    return;
+}
+
+// if no new image selected → keep old image
+
 saveData();
 renderItems();
 closeInputModal();
@@ -588,7 +734,37 @@ area.innerHTML=`
 ${options}
 </select>
 
-<input id="dishImage" type="file" accept="image/*">
+<div class="image-row" style="display:flex;gap:8px;align-items:center;">
+
+    <!-- Hidden input (gallery) -->
+    <input id="dishImage" type="file" accept="image/*" style="display:none;">
+
+    <!-- Hidden input (camera) -->
+    <input id="dishCamera" type="file" accept="image/*" capture="environment" style="display:none;">
+
+    <!-- Fake input UI -->
+    <div onclick="document.getElementById('dishImage').click()" 
+         style="flex:1;padding:11px;border:1px solid #ddd;border-radius:7px;cursor:pointer;">
+        Choose Image
+    </div>
+
+    <!-- Camera button -->
+    <button type="button"
+        onclick="document.getElementById('dishCamera').click()"
+        style="padding:11px 14px;border:none;background:#222;color:white;border-radius:7px;cursor:pointer;">
+        <i data-lucide="camera"></i>
+    </button>
+
+</div>
+
+<img id="previewImage" style="
+    width:100%;
+    max-height:200px;
+    object-fit:cover;
+    border-radius:8px;
+    display:none;
+    margin-bottom:10px;
+">
 
 <div class="form-actions">
 <button class="cancel-btn" onclick="closeForm()">Cancel</button>
@@ -598,6 +774,7 @@ ${options}
 </div>
 `;
 
+lucide.createIcons();
 }
 
 function closeForm(){
@@ -655,7 +832,13 @@ let desc=document.getElementById("dishDesc").value;
 let related=document.getElementById("dishRelated").value;
 
 let input = document.getElementById("dishImage");
-let file = input.files && input.files[0];
+let file = croppedBlob ? croppedBlob : (input.files && input.files[0]);
+
+// 🚫 FILE SIZE LIMIT (4MB)
+if(file && file.size > 4 * 1024 * 1024){
+    showToast("Image too large (max 4MB)");
+    return;
+}
 
 // validation FIRST
 if(!name || !price){
@@ -776,12 +959,22 @@ row.innerHTML = `
         <span>₹${item.price}</span>
     </div>
 
-    <div style="display:flex;align-items:center;gap:10px;">
-        <button onclick="editItem(${i})">Edit</button>
-        <button onclick="toggleItem(${i})">${item.hidden ? "Unhide" : "Hide"}</button>
-        <button onclick="deleteItem(${i})">Delete</button>
+    <div class="item-actions">
+
+        <span onclick="editItem(${i})" class="action-btn" title="Edit">
+            <i data-lucide="edit"></i>
+        </span>
+
+        <span onclick="toggleItem(${i})" class="action-btn" title="Toggle">
+            <i data-lucide="${item.hidden ? 'eye-off' : 'eye'}"></i>
+        </span>
+
+        <span onclick="deleteItem(${i})" class="action-btn delete" title="Delete">
+            <i data-lucide="trash-2"></i>
+        </span>
 
         <span class="drag-handle">≡</span>
+
     </div>
 
 </div>
@@ -790,6 +983,8 @@ row.innerHTML = `
 list.appendChild(row);
 
 });
+
+lucide.createIcons();
 
 // 👇 SORTABLE HERE
 
@@ -844,7 +1039,7 @@ document.getElementById("modalInput3").value=item.description||"";
 document.getElementById("modalInput2").style.display="block";
 document.getElementById("modalInput3").style.display="block";
 document.getElementById("modalRelated").style.display="block";
-document.getElementById("modalImage").style.display="block";
+document.getElementById("modalImage").style.display="none";
 
 let select=document.getElementById("modalRelated");
 
@@ -854,11 +1049,25 @@ Object.keys(menuData).forEach(c=>{
 options+=`<option value="${c}" ${item.related===c?"selected":""}>${c}</option>`;
 });
 
-select.innerHTML=options;
+select.innerHTML = options;
 
-editIndex=i;
+let preview = document.getElementById("editPreviewImage");
 
-document.getElementById("inputModal").style.display="flex";
+if(item.image){
+    preview.src = item.image;
+    preview.style.display = "block";
+} else {
+    preview.style.display = "none";
+}
+
+editIndex = i;
+croppedBlob = null;
+
+document.getElementById("inputModal").style.display = "flex";
+
+requestAnimationFrame(() => {
+    lucide.createIcons();
+});
 
 }
 
@@ -1049,6 +1258,93 @@ list.appendChild(row);
 
 renderCategories();
 
+let cropper;
+let croppedBlob = null;
+
+document.addEventListener("change", function(e){
+
+    if(e.target && (
+    e.target.id === "dishImage" ||
+    e.target.id === "dishCamera" ||
+    e.target.id === "editDishImage" ||
+    e.target.id === "editDishCamera"
+)){
+
+        let file = e.target.files[0];
+        if(!file) return;
+
+        // 🚫 size limit (keep here)
+        if(file.size > 4 * 1024 * 1024){
+            showToast("Max image size is 4MB");
+            return;
+        }
+
+        let reader = new FileReader();
+
+        reader.onload = function(ev){
+
+            let cropImg = document.getElementById("cropImage");
+            cropImg.src = ev.target.result;
+
+            document.getElementById("cropModal").style.display = "flex";
+
+            if(cropper) cropper.destroy();
+
+            cropper = new Cropper(cropImg, {
+                aspectRatio: NaN,
+                viewMode: 1
+            });
+
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+});
+
+function applyCrop(){
+
+    if(!cropper) return;
+
+    let canvas = cropper.getCroppedCanvas({
+        width: 600,
+        height: 600
+    });
+
+    canvas.toBlob(function(blob){
+
+        if(!blob){
+            showToast("Crop failed");
+            return;
+        }
+
+        croppedBlob = blob;
+
+        let reader = new FileReader();
+        reader.onload = function(e){
+            let img = document.getElementById("previewImage") || document.getElementById("editPreviewImage");
+            if(img){
+                img.src = e.target.result;
+                img.style.display = "block";
+            }
+        };
+        reader.readAsDataURL(blob);
+
+        closeCrop();
+
+    }, "image/jpeg", 0.8);
+}
+
+function closeCrop(){
+    document.getElementById("cropModal").style.display = "none";
+
+    if(cropper){
+        cropper.destroy();
+        cropper = null;
+    }
+}
+
+lucide.createIcons();
 
 </script>
 
