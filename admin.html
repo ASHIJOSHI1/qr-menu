@@ -575,16 +575,20 @@ new Sortable(list, {
 
 function openCategoryModal(){
 
-editIndex=null;
+editIndex = null;
 
-document.getElementById("modalTitle").innerText="Add Category";
+document.getElementById("modalTitle").innerText = "Add Category";
 
-document.getElementById("modalInput1").value="";
-document.getElementById("modalInput2").style.display="none";
-document.getElementById("modalInput3").style.display="none";
+document.getElementById("modalInput1").value = "";
+document.getElementById("modalInput2").style.display = "none";
+document.getElementById("modalInput3").style.display = "none";
 
-document.getElementById("inputModal").style.display="flex";
+document.getElementById("modalRelated").style.display = "none";
+document.querySelector(".image-row").style.display = "none";
+document.getElementById("editPreviewImage").style.display = "none";
+croppedBlob = null;
 
+document.getElementById("inputModal").style.display = "flex";
 }
 
 function editCategory(){
@@ -598,6 +602,9 @@ document.getElementById("modalInput3").style.display="none";
 
 document.getElementById("modalRelated").style.display="none";
 document.getElementById("modalImage").style.display="none";
+
+Pdocument.querySelector(".image-row").style.display = "none";
+document.getElementById("editPreviewImage").style.display = "none";
 
 editIndex="category";
 
@@ -775,6 +782,14 @@ ${options}
 `;
 
 lucide.createIcons();
+
+// ✅ ADD THIS BELOW
+setTimeout(() => {
+    document.getElementById("formArea").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}, 100);
 }
 
 function closeForm(){
