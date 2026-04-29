@@ -1361,6 +1361,27 @@ function closeCrop(){
 
 lucide.createIcons();
 
+document.addEventListener("focusin", function(e) {
+
+    if (
+    e.target.id === "dishName" ||
+    e.target.id === "dishPrice" ||
+    e.target.id === "dishDesc" ||
+    e.target.id === "modalInput1" ||
+    e.target.id === "modalInput2" ||
+    e.target.id === "modalInput3"
+    ) {
+
+        setTimeout(() => {
+            e.target.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+        }, 300); // wait for keyboard
+    }
+
+});
+
 </script>
 
 </body>
