@@ -1363,21 +1363,29 @@ lucide.createIcons();
 
 document.addEventListener("focusin", function(e) {
 
-    if (
-    e.target.id === "dishName" ||
-    e.target.id === "dishPrice" ||
-    e.target.id === "dishDesc" ||
-    e.target.id === "modalInput1" ||
-    e.target.id === "modalInput2" ||
-    e.target.id === "modalInput3"
-    ) {
+    const ids = [
+        "dishName",
+        "dishPrice",
+        "dishDesc",
+        "modalInput1",
+        "modalInput2",
+        "modalInput3"
+    ];
+
+    if (ids.includes(e.target.id)) {
 
         setTimeout(() => {
-            e.target.scrollIntoView({
-                behavior: "smooth",
-                block: "center"
+
+            let rect = e.target.getBoundingClientRect();
+            let absoluteTop = rect.top + window.scrollY;
+
+            window.scrollTo({
+                top: absoluteTop - 140, // adjust space above input
+                behavior: "smooth"
             });
-        }, 300); // wait for keyboard
+
+        }, 350); // wait for keyboard fully open
+
     }
 
 });
