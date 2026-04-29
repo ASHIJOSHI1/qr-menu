@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Menu Admin</title>
 
 <style>
@@ -67,10 +67,13 @@ color:white;
 /* ITEMS PANEL */
 
 .items-panel{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+
+    overflow-y: auto;
+    max-height: 100vh;
 }
 
 .item-row{
@@ -1372,21 +1375,19 @@ document.addEventListener("focusin", function(e) {
         "modalInput3"
     ];
 
-    if (ids.includes(e.target.id)) {
+    if (!ids.includes(e.target.id)) return;
 
-        setTimeout(() => {
+    // Wait for keyboard
+    setTimeout(() => {
 
-            let rect = e.target.getBoundingClientRect();
-            let absoluteTop = rect.top + window.scrollY;
+        const y = e.target.getBoundingClientRect().top + window.scrollY;
 
-            window.scrollTo({
-                top: absoluteTop - 140, // adjust space above input
-                behavior: "smooth"
-            });
+        window.scrollTo({
+            top: y - 150,
+            behavior: "smooth"
+        });
 
-        }, 350); // wait for keyboard fully open
-
-    }
+    }, 350);
 
 });
 
