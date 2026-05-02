@@ -330,6 +330,16 @@ display:none;
     cursor: grabbing;
 }
 
+/* Disable text selection only for drag areas */
+.category,
+.drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+
+    -webkit-touch-callout: none; /* disable long press menu */
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -540,7 +550,7 @@ new Sortable(list, {
     animation: 150,
     handle: ".drag-handle",
 
-    delay: 800,
+    delay: 250,
     delayOnTouchOnly: true,
 
     ghostClass: "drag-ghost",
@@ -1360,39 +1370,6 @@ function closeCrop(){
 }
 
 lucide.createIcons();
-
-// ✅ FINAL MOBILE KEYBOARD HANDLING
-
-function isKeyboardOpen() {
-    return window.innerHeight < window.screen.height * 0.75;
-}
-
-window.addEventListener("resize", () => {
-
-    if (isKeyboardOpen()) {
-        document.body.style.paddingBottom = "300px";
-    } else {
-        document.body.style.paddingBottom = "0px";
-    }
-
-});
-
-document.addEventListener("focusin", function(e) {
-
-    const ids = ["dishName","dishPrice","dishDesc"];
-
-    if (ids.includes(e.target.id)) {
-
-        setTimeout(() => {
-            e.target.scrollIntoView({
-                behavior: "smooth",
-                block: "center"
-            });
-        }, 200);
-
-    }
-
-});
 
 </script>
 
