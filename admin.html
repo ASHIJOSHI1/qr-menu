@@ -554,8 +554,8 @@ new Sortable(list, {
     animation: 150,
     handle: ".drag-handle",
 
-    delay: 250,
-    delayOnTouchOnly: true,
+    delay: 0,
+    touchStartThreshold: 5,
 
     ghostClass: "drag-ghost",
     chosenClass: "drag-chosen",
@@ -1026,8 +1026,8 @@ window.itemsSortable = new Sortable(document.getElementById("itemsList"), {
     animation: 150,
     handle: ".drag-handle",
 
-    delay: 800,
-    delayOnTouchOnly: true,
+    delay: 0,
+    touchStartThreshold: 5,
 
     ghostClass: "drag-ghost",
     chosenClass: "drag-chosen",
