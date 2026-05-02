@@ -330,14 +330,18 @@ display:none;
     cursor: grabbing;
 }
 
-/* Disable text selection only for drag areas */
-.category,
-.drag-handle {
-    user-select: none;
+/* 🚫 Disable ALL text selection + long press menu */
+* {
     -webkit-user-select: none;
-    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
 
-    -webkit-touch-callout: none; /* disable long press menu */
+/* ⚠️ Allow typing cursor inside inputs (but no selection) */
+input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 </style>
@@ -566,6 +570,7 @@ new Sortable(list, {
             let name = el.getAttribute("data-name");
             newOrder.push(name);
         });
+    
 
         let newData = {};
 
