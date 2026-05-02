@@ -1369,25 +1369,27 @@ document.addEventListener("focusin", function(e) {
     const ids = [
         "dishName",
         "dishPrice",
-        "dishDesc",
-        "modalInput1",
-        "modalInput2",
-        "modalInput3"
+        "dishDesc"
     ];
 
-    if (!ids.includes(e.target.id)) return;
+    if (ids.includes(e.target.id)) {
 
-    // Wait for keyboard
-    setTimeout(() => {
+        setTimeout(() => {
 
-        const y = e.target.getBoundingClientRect().top + window.scrollY;
+            const panel = document.querySelector(".items-panel");
+            const rect = e.target.getBoundingClientRect();
+            const panelRect = panel.getBoundingClientRect();
 
-        window.scrollTo({
-            top: y - 150,
-            behavior: "smooth"
-        });
+            const offset = rect.top - panelRect.top;
 
-    }, 350);
+            panel.scrollTo({
+                top: panel.scrollTop + offset - 80,
+                behavior: "smooth"
+            });
+
+        }, 300);
+
+    }
 
 });
 
