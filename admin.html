@@ -71,9 +71,6 @@ color:white;
     padding:20px;
     border-radius:10px;
     box-shadow:0 2px 8px rgba(0,0,0,0.08);
-
-    overflow-y: auto;
-    max-height: 100vh;
 }
 
 .item-row{
@@ -606,7 +603,7 @@ document.getElementById("modalInput3").style.display="none";
 document.getElementById("modalRelated").style.display="none";
 document.getElementById("modalImage").style.display="none";
 
-Pdocument.querySelector(".image-row").style.display = "none";
+document.querySelector(".image-row").style.display = "none";
 document.getElementById("editPreviewImage").style.display = "none";
 
 editIndex="category";
@@ -1364,30 +1361,34 @@ function closeCrop(){
 
 lucide.createIcons();
 
+// ✅ FINAL MOBILE KEYBOARD HANDLING
+
+function isKeyboardOpen() {
+    return window.innerHeight < window.screen.height * 0.75;
+}
+
+window.addEventListener("resize", () => {
+
+    if (isKeyboardOpen()) {
+        document.body.style.paddingBottom = "300px";
+    } else {
+        document.body.style.paddingBottom = "0px";
+    }
+
+});
+
 document.addEventListener("focusin", function(e) {
 
-    const ids = [
-        "dishName",
-        "dishPrice",
-        "dishDesc"
-    ];
+    const ids = ["dishName","dishPrice","dishDesc"];
 
     if (ids.includes(e.target.id)) {
 
         setTimeout(() => {
-
-            const panel = document.querySelector(".items-panel");
-            const rect = e.target.getBoundingClientRect();
-            const panelRect = panel.getBoundingClientRect();
-
-            const offset = rect.top - panelRect.top;
-
-            panel.scrollTo({
-                top: panel.scrollTop + offset - 80,
-                behavior: "smooth"
+            e.target.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
             });
-
-        }, 300);
+        }, 200);
 
     }
 
