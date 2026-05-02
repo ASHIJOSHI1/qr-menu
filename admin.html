@@ -1376,6 +1376,15 @@ function closeCrop(){
 
 lucide.createIcons();
 
+// 🚫 HARD DISABLE TEXT SELECTION + LONG PRESS
+document.addEventListener("selectstart", function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+});
+
 </script>
 
 </body>
