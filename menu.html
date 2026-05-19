@@ -9,6 +9,59 @@
 
 <style>
 
+/* FEATURED SLIDER */
+
+.featured-slider{
+position:relative;
+width:95%;
+height:170px;
+margin:18px auto;
+border-radius:16px;
+overflow:hidden;
+}
+
+.featured-track{
+display:flex;
+height:100%;
+transition:transform 0.4s ease;
+}
+
+.featured-banner{
+min-width:100%;
+height:170px;
+cursor:pointer;
+position:relative;
+}
+
+.featured-banner img{
+width:100%;
+height:100%;
+object-fit:cover;
+display:block;
+}
+
+.featured-dots{
+display:flex;
+justify-content:center;
+gap:6px;
+margin-top:10px;
+margin-bottom:18px;
+}
+
+.featured-dot{
+width:8px;
+height:8px;
+border-radius:50%;
+background:#ccc;
+transition:0.3s;
+}
+
+.featured-dot.active{
+background:#ff6b6b;
+width:20px;
+border-radius:20px;
+}
+
 * {
     -webkit-tap-highlight-color: transparent;
 }
@@ -358,6 +411,20 @@ box-shadow:0 4px 12px rgba(0,0,0,0.2);
 <h1>Morocco Restaurant</h1>
 <h2>Welcome</h2>
 
+<!-- FEATURED SPECIALS -->
+
+<div id="featuredSection" style="display:none;">
+
+    <div class="featured-slider">
+
+        <div class="featured-track" id="featuredTrack"></div>
+
+    </div>
+
+    <div class="featured-dots" id="featuredDots"></div>
+
+</div>
+
 <input type="text" id="searchBox" placeholder="Search food..." onkeyup="searchMenu()"/>
 
 <div class="menu-buttons" id="menuButtons"></div>
@@ -428,9 +495,137 @@ font-size:16px;
 /* EVERYTHING BELOW IS UNCHANGED LOGIC */
 
 let menuData = JSON.parse(localStorage.getItem("menuData")) || {};
+let featuredSpecials =
+JSON.parse(localStorage.getItem("featuredSpecials")) || [];
+
+let currentBanner = 0;
+let bannerInterval;
 let orderList=[];
 let currentDish=null;
 let dishQty = 0;
+
+function renderFeaturedSlider(){
+
+    let section = document.getElementById("featuredSection");
+    let track = document.getElementById("featuredTrack");
+    let dots = document.getElementById("featuredDots");
+
+    if(!section || !track || !dots) return;
+
+    // no banners
+    if(featuredSpecials.length === 0){
+
+        section.style.display = "none";
+        return;
+
+    }
+
+    section.style.display = "block";
+
+    track.innerHTML = "";
+    dots.innerHTML = "";
+
+    featuredSpecials.forEach((banner, index) => {
+
+        // slide
+        let slide = document.createElement("div");
+
+        slide.className = "featured-banner";
+
+        slide.innerHTML = `
+            <img src="${banner.image}">
+        `;
+
+        slide.onclick = function(){
+
+            openBannerDish(banner.linkedItem);
+
+        };
+
+        track.appendChild(slide);
+
+        // dots
+        let dot = document.createElement("div");
+
+        dot.className = "featured-dot";
+
+        if(index === 0){
+            dot.classList.add("active");
+        }
+
+        dots.appendChild(dot);
+
+    });
+
+    startBannerAutoSlide();
+
+}
+
+function startBannerAutoSlide(){
+
+    clearInterval(bannerInterval);
+
+    if(featuredSpecials.length <= 1) return;
+
+    bannerInterval = setInterval(() => {
+
+        currentBanner++;
+
+        if(currentBanner >= featuredSpecials.length){
+            currentBanner = 0;
+        }
+
+        updateBannerSlider();
+
+    }, 3000);
+
+}
+
+function updateBannerSlider(){
+
+    let track = document.getElementById("featuredTrack");
+
+    if(!track) return;
+
+    track.style.transform =
+        `translateX(-${currentBanner * 100}%)`;
+
+    // dots update
+    let dots = document.querySelectorAll(".featured-dot");
+
+    dots.forEach((dot, index) => {
+
+        dot.classList.remove("active");
+
+        if(index === currentBanner){
+            dot.classList.add("active");
+        }
+
+    });
+
+}
+
+function openBannerDish(itemName){
+
+    for(let category in menuData){
+
+        let items = menuData[category].items;
+
+        for(let item of items){
+
+            if(item.name === itemName){
+
+                openDish(item, category);
+
+                return;
+
+            }
+
+        }
+
+    }
+
+}
 
 function safeId(name){
 return name.replace(/\s+/g,'-').toLowerCase();
@@ -865,6 +1060,7 @@ item.style.display=txt.includes(term)?"flex":"none";
 
 renderCategoryButtons();
 renderMenu();
+renderFeaturedSlider();
 
 </script>
 
