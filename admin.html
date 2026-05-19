@@ -383,15 +383,31 @@ input, textarea {
 
 <h3 id="categoryTitle">Select Category</h3>
 
-<div id="categoryControls" style="margin-bottom:10px;"></div>
+<div id="categoryControls" style="margin-bottom:10px;display:flex;"></div>
 
 <hr style="border:none;border-top:1px solid #eee;margin:10px 0 15px 0;">
 
 <div id="itemsList"></div>
 
-<button class="add-btn" onclick="showAddForm()">+ Add Item</button>
+<button id="addItemBtn" class="add-btn" onclick="showAddForm()">
+    + Add Item
+</button>
 
 <div id="formArea"></div>
+
+<hr style="border:none;border-top:1px solid #eee;margin:30px 0;">
+
+<h3>Featured Specials</h3>
+
+<div id="featuredList"></div>
+
+<button
+    id="addFeaturedBtn"
+    class="add-btn"
+    onclick="openFeaturedModal()"
+>
+    + Add Banner
+</button>
 
 </div>
 
@@ -445,14 +461,43 @@ input, textarea {
 
 </div>
 
-<img id="editPreviewImage" style="
-    width:100%;
-    max-height:200px;
-    object-fit:cover;
-    border-radius:8px;
+<div id="editPreviewWrapper" style="
+    position:relative;
     display:none;
     margin-top:10px;
 ">
+
+    <img id="editPreviewImage" style="
+        width:100%;
+        max-height:200px;
+        object-fit:cover;
+        border-radius:8px;
+        display:block;
+    ">
+
+    <button
+        type="button"
+        onclick="confirmRemoveImage('edit')"
+        style="
+            position:absolute;
+            top:8px;
+            right:8px;
+            width:32px;
+            height:32px;
+            border:none;
+            border-radius:50%;
+            background:#ff4d4d;
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+        "
+    >
+        <i data-lucide="trash-2"></i>
+    </button>
+
+</div>
 
 <div class="modal-actions">
 <button onclick="closeInputModal()">Cancel</button>
@@ -473,6 +518,69 @@ input, textarea {
 </div>
 
 <div id="toast"></div>
+
+<div id="featuredModal" class="modal">
+
+<div class="modal-box">
+
+<h3>Add Featured Banner</h3>
+
+<select id="featuredDishSelect"></select>
+
+<div class="image-row" style="display:flex;gap:8px;align-items:center;">
+
+    <input
+        id="featuredImage"
+        type="file"
+        accept="image/*"
+        style="display:none;"
+    >
+
+    <div
+        onclick="document.getElementById('featuredImage').click()"
+        style="
+            flex:1;
+            padding:11px;
+            border:1px solid #ddd;
+            border-radius:7px;
+            cursor:pointer;
+        "
+    >
+        Choose Banner Image
+    </div>
+
+</div>
+
+<div id="featuredPreviewWrapper" style="
+    position:relative;
+    display:none;
+    margin-top:12px;
+">
+
+    <img id="featuredPreview"
+        style="
+            width:100%;
+            max-height:200px;
+            object-fit:cover;
+            border-radius:8px;
+        ">
+
+</div>
+
+<div class="modal-actions">
+
+    <button onclick="closeFeaturedModal()">
+        Cancel
+    </button>
+
+    <button onclick="saveFeaturedBanner()">
+        Save
+    </button>
+
+</div>
+
+</div>
+</div>
 
 <div id="cropModal" class="modal">
 <div class="modal-box">
@@ -496,11 +604,19 @@ let menuData = JSON.parse(localStorage.getItem("menuData")) || {};
 let currentCategory=null;
 let confirmAction=null;
 let editIndex=null;
+let featuredSpecials = JSON.parse(localStorage.getItem("featuredSpecials")) || [];
 
 /* SAVE */
 
 function saveData(){
-localStorage.setItem("menuData",JSON.stringify(menuData));
+
+localStorage.setItem("menuData", JSON.stringify(menuData));
+
+localStorage.setItem(
+    "featuredSpecials",
+    JSON.stringify(featuredSpecials)
+);
+
 }
 
 /* TOAST */
@@ -739,6 +855,10 @@ return;
 
 let area=document.getElementById("formArea");
 
+document.getElementById("categoryControls").style.display = "none";
+
+document.getElementById("addItemBtn").style.display = "none";
+
 let options="";
 Object.keys(menuData).forEach(c=>{
 options+=`<option value="${c}">${c}</option>`;
@@ -779,14 +899,43 @@ ${options}
 
 </div>
 
-<img id="previewImage" style="
-    width:100%;
-    max-height:200px;
-    object-fit:cover;
-    border-radius:8px;
+<div id="previewWrapper" style="
+    position:relative;
     display:none;
     margin-bottom:10px;
 ">
+
+    <img id="previewImage" style="
+        width:100%;
+        max-height:200px;
+        object-fit:cover;
+        border-radius:8px;
+        display:block;
+    ">
+
+    <button
+        type="button"
+        onclick="confirmRemoveImage('add')"
+        style="
+            position:absolute;
+            top:8px;
+            right:8px;
+            width:32px;
+            height:32px;
+            border:none;
+            border-radius:50%;
+            background:#ff4d4d;
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+        "
+    >
+        <i data-lucide="trash-2"></i>
+    </button>
+
+</div>
 
 <div class="form-actions">
 <button class="cancel-btn" onclick="closeForm()">Cancel</button>
@@ -808,7 +957,13 @@ setTimeout(() => {
 }
 
 function closeForm(){
+
 document.getElementById("formArea").innerHTML="";
+
+document.getElementById("addItemBtn").style.display = "block";
+
+document.getElementById("categoryControls").style.display = "flex";
+
 }
 
 function compressImage(file, callback){
@@ -945,6 +1100,160 @@ showToast("Item added");
 }
 }
 
+function openFeaturedModal(){
+
+    // limit max 3 banners
+    if(featuredSpecials.length >= 3){
+        showToast("Maximum 3 banners allowed");
+        return;
+    }
+
+    let select = document.getElementById("featuredDishSelect");
+
+    let options = `
+        <option value="">Select Dish</option>
+    `;
+
+    Object.keys(menuData).forEach(cat => {
+
+        menuData[cat].items.forEach(item => {
+
+            options += `
+                <option value="${item.name}">
+                    ${item.name}
+                </option>
+            `;
+
+        });
+
+    });
+
+    select.innerHTML = options;
+
+    document.getElementById("featuredPreviewWrapper").style.display = "none";
+
+    document.getElementById("featuredImage").value = "";
+
+    document.getElementById("featuredModal").style.display = "flex";
+
+}
+
+function closeFeaturedModal(){
+
+    document.getElementById("featuredModal").style.display = "none";
+
+}
+
+function saveFeaturedBanner(){
+
+    let dish = document.getElementById(
+        "featuredDishSelect"
+    ).value;
+
+    if(!dish){
+        showToast("Select a dish");
+        return;
+    }
+
+    if(!croppedBlob){
+        showToast("Choose banner image");
+        return;
+    }
+
+    compressImage(croppedBlob, function(compressedFile){
+
+        let reader = new FileReader();
+
+        reader.onload = function(e){
+
+            featuredSpecials.push({
+
+                linkedItem: dish,
+
+                image: e.target.result
+
+            });
+
+            saveData();
+
+            renderFeaturedSpecials();
+
+            closeFeaturedModal();
+
+            croppedBlob = null;
+
+            showToast("Featured banner added");
+
+        };
+
+        reader.readAsDataURL(compressedFile);
+
+    });
+
+}
+
+function renderFeaturedSpecials(){
+
+    let list = document.getElementById("featuredList");
+
+    if(!list) return;
+
+    list.innerHTML = "";
+
+    if(featuredSpecials.length === 0){
+
+        list.innerHTML = `
+            <p style="color:#888;font-size:14px;">
+                No featured banners added yet.
+            </p>
+        `;
+
+        return;
+    }
+
+    featuredSpecials.forEach((banner, index) => {
+
+        let row = document.createElement("div");
+
+        row.className = "item-row";
+
+        row.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;width:100%;">
+
+            <img src="${banner.image}"
+                style="
+                    width:80px;
+                    height:60px;
+                    object-fit:cover;
+                    border-radius:8px;
+                ">
+
+            <div class="item-info">
+                <strong>${banner.linkedItem}</strong>
+                <span>Featured Banner</span>
+            </div>
+
+            <div class="item-actions" style="margin-left:auto;">
+
+                <span onclick="deleteFeatured(${index})"
+                    class="action-btn delete">
+
+                    <i data-lucide="trash-2"></i>
+
+                </span>
+
+            </div>
+
+        </div>
+        `;
+
+        list.appendChild(row);
+
+    });
+
+    lucide.createIcons();
+
+}
 
 /* ITEMS RENDER */
 
@@ -963,10 +1272,22 @@ return;
 
 title.innerText=currentCategory;
 
-controls.innerHTML=`
-<button onclick="editCategory()">Edit</button>
-<button onclick="toggleCategory()">${menuData[currentCategory].hidden ? "Unhide" : "Hide"}</button>
-<button onclick="deleteCategory()">Delete</button>
+controls.innerHTML = `
+<div style="display:flex;gap:10px;align-items:center;">
+
+    <span onclick="editCategory()" class="action-btn" title="Edit Category">
+        <i data-lucide="edit"></i>
+    </span>
+
+    <span onclick="toggleCategory()" class="action-btn" title="Toggle Visibility">
+        <i data-lucide="${menuData[currentCategory].hidden ? 'eye-off' : 'eye'}"></i>
+    </span>
+
+    <span onclick="deleteCategory()" class="action-btn delete" title="Delete Category">
+        <i data-lucide="trash-2"></i>
+    </span>
+
+</div>
 `;
 
 list.innerHTML="";
@@ -1085,9 +1406,9 @@ let preview = document.getElementById("editPreviewImage");
 
 if(item.image){
     preview.src = item.image;
-    preview.style.display = "block";
+    document.getElementById("editPreviewWrapper").style.display = "block";
 } else {
-    preview.style.display = "none";
+    document.getElementById("editPreviewWrapper").style.display = "none";
 }
 
 editIndex = i;
@@ -1196,6 +1517,22 @@ showToast("Category deleted");
 
 }
 
+function deleteFeatured(index){
+
+    showConfirm("Delete featured banner?", () => {
+
+        featuredSpecials.splice(index, 1);
+
+        saveData();
+
+        renderFeaturedSpecials();
+
+        showToast("Banner deleted");
+
+    });
+
+}
+
 /* CONFIRM */
 
 function showConfirm(msg,action){
@@ -1287,6 +1624,7 @@ list.appendChild(row);
 }
 
 renderCategories();
+renderFeaturedSpecials();
 
 let cropper;
 let croppedBlob = null;
@@ -1297,7 +1635,8 @@ document.addEventListener("change", function(e){
     e.target.id === "dishImage" ||
     e.target.id === "dishCamera" ||
     e.target.id === "editDishImage" ||
-    e.target.id === "editDishCamera"
+    e.target.id === "editDishCamera" ||
+    e.target.id === "featuredImage"
 )){
 
         let file = e.target.files[0];
@@ -1318,6 +1657,11 @@ document.addEventListener("change", function(e){
 
             document.getElementById("cropModal").style.display = "flex";
 
+            if(e.target.id === "featuredImage"){
+    document.getElementById("cropModal").dataset.target = "featured";
+}else{
+    document.getElementById("cropModal").dataset.target = "";
+}
             if(cropper) cropper.destroy();
 
             cropper = new Cropper(cropImg, {
@@ -1353,10 +1697,35 @@ function applyCrop(){
         let reader = new FileReader();
         reader.onload = function(e){
             let img = document.getElementById("previewImage") || document.getElementById("editPreviewImage");
-            if(img){
-                img.src = e.target.result;
-                img.style.display = "block";
-            }
+            let addPreview = document.getElementById("previewImage");
+let editPreview = document.getElementById("editPreviewImage");
+let featuredPreview = document.getElementById("featuredPreview");
+
+if(document.getElementById("cropModal").dataset.target === "featured"){
+
+    featuredPreview.src = e.target.result;
+
+    document.getElementById(
+        "featuredPreviewWrapper"
+    ).style.display = "block";
+
+}else if(editPreview && document.getElementById("inputModal").style.display === "flex"){
+
+    editPreview.src = e.target.result;
+
+    document.getElementById(
+        "editPreviewWrapper"
+    ).style.display = "block";
+
+}else if(addPreview){
+
+    addPreview.src = e.target.result;
+
+    document.getElementById(
+        "previewWrapper"
+    ).style.display = "block";
+
+}
         };
         reader.readAsDataURL(blob);
 
@@ -1372,6 +1741,51 @@ function closeCrop(){
         cropper.destroy();
         cropper = null;
     }
+}
+
+function confirmRemoveImage(type){
+
+    showConfirm("Remove image?", () => {
+
+        if(type === "add"){
+
+            // clear preview
+            document.getElementById("previewImage").src = "";
+
+            // hide wrapper
+            document.getElementById("previewWrapper").style.display = "none";
+
+            // clear input
+            document.getElementById("dishImage").value = "";
+            document.getElementById("dishCamera").value = "";
+
+        }
+
+        if(type === "edit"){
+
+            // remove preview
+            document.getElementById("editPreviewImage").src = "";
+
+            // hide wrapper
+            document.getElementById("editPreviewWrapper").style.display = "none";
+
+            // clear inputs
+            document.getElementById("editDishImage").value = "";
+            document.getElementById("editDishCamera").value = "";
+
+            // remove saved image
+            if(typeof editIndex === "number"){
+                menuData[currentCategory].items[editIndex].image = null;
+            }
+
+        }
+
+        croppedBlob = null;
+
+        showToast("Image removed");
+
+    });
+
 }
 
 lucide.createIcons();
