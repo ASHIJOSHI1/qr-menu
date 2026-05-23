@@ -105,11 +105,11 @@ border:1px solid #ccc;
 display:flex;
 overflow-x:auto;
 gap:10px;
-padding:10px;
-position:sticky;
-top:0;
-background:#f8f8f8;
-z-index:100;
+padding:10px 0;
+}
+
+.menu-buttons::-webkit-scrollbar{
+display:none;
 }
 
 .menu-buttons::-webkit-scrollbar{display:none;}
@@ -129,6 +129,35 @@ cursor:pointer;
 .menu-buttons button.active{
 background:#222;
 transform:scale(1.05);
+}
+
+/* STICKY TOP AREA */
+
+.sticky-top{
+position:sticky;
+top:0;
+z-index:300;
+background:#f8f8f8;
+padding-top:8px;
+padding-bottom:6px;
+
+will-change: transform;
+transform: translateZ(0);
+}
+
+.sticky-top::after{
+content:"";
+position:absolute;
+left:0;
+bottom:0;
+width:100%;
+height:12px;
+background:linear-gradient(
+to bottom,
+rgba(248,248,248,1),
+rgba(248,248,248,0)
+);
+pointer-events:none;
 }
 
 /* CATEGORY BLOCK */
@@ -425,9 +454,18 @@ box-shadow:0 4px 12px rgba(0,0,0,0.2);
 
 </div>
 
-<input type="text" id="searchBox" placeholder="Search food..." onkeyup="searchMenu()"/>
+<div class="sticky-top">
+
+<input
+type="text"
+id="searchBox"
+placeholder="Search food..."
+onkeyup="searchMenu()"
+/>
 
 <div class="menu-buttons" id="menuButtons"></div>
+
+</div>
 
 <div id="menuList"></div>
 
@@ -500,6 +538,9 @@ JSON.parse(localStorage.getItem("featuredSpecials")) || [];
 
 let currentBanner = 0;
 let bannerInterval;
+
+let startX = 0;
+let endX = 0;
 let orderList=[];
 let currentDish=null;
 let dishQty = 0;
@@ -558,6 +599,58 @@ function renderFeaturedSlider(){
     });
 
     startBannerAutoSlide();
+
+let slider = document.querySelector(".featured-slider");
+
+if(slider){
+
+    slider.ontouchstart = (e) => {
+
+        startX = e.touches[0].clientX;
+
+        // pause auto slide while touching
+        clearInterval(bannerInterval);
+
+    };
+
+    slider.ontouchend = (e) => {
+
+        endX = e.changedTouches[0].clientX;
+
+        let diff = startX - endX;
+
+        // swipe left
+        if(diff > 50){
+
+            currentBanner++;
+
+            if(currentBanner >= featuredSpecials.length){
+                currentBanner = 0;
+            }
+
+            updateBannerSlider();
+
+        }
+
+        // swipe right
+        if(diff < -50){
+
+            currentBanner--;
+
+            if(currentBanner < 0){
+                currentBanner = featuredSpecials.length - 1;
+            }
+
+            updateBannerSlider();
+
+        }
+
+        // resume auto slide
+        startBannerAutoSlide();
+
+    };
+
+}
 
 }
 
@@ -780,6 +873,18 @@ style="width:84px;height:34px;padding:0"
 onclick="addDishToOrder('${item.name}',${item.price})">
 Add
 </button>
+
+${item.spice ? `
+<div style="
+margin-top:8px;
+font-size:13px;
+font-weight:600;
+color:#ff6b6b;
+text-align:center;
+">
+${item.spice}
+</div>
+` : ""}
 
 </div>
 
