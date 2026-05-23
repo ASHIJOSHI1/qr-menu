@@ -605,6 +605,7 @@ let currentCategory=null;
 let confirmAction=null;
 let editIndex=null;
 let featuredSpecials = JSON.parse(localStorage.getItem("featuredSpecials")) || [];
+let selectedSpice = "";
 
 /* SAVE */
 
@@ -876,6 +877,78 @@ area.innerHTML=`
 ${options}
 </select>
 
+<div style="margin-bottom:14px;">
+
+<div style="
+font-size:14px;
+font-weight:600;
+margin-bottom:8px;
+text-align:left;
+">
+Spice Level
+</div>
+
+<div style="
+display:flex;
+gap:8px;
+">
+
+<button
+type="button"
+class="spice-btn active"
+data-spice=""
+onclick="selectSpice(this,'')"
+style="
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#222;
+color:white;
+cursor:pointer;
+font-weight:600;
+">
+None
+</button>
+
+<button
+type="button"
+class="spice-btn"
+data-spice="medium"
+onclick="selectSpice(this,'Medium 🌶')"
+style="
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#eee;
+cursor:pointer;
+font-weight:600;
+">
+Medium 🌶
+</button>
+
+<button
+type="button"
+class="spice-btn"
+data-spice="spicy"
+onclick="selectSpice(this,'Spicy 🌶🌶')"
+style="
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#eee;
+cursor:pointer;
+font-weight:600;
+">
+Spicy 🌶🌶
+</button>
+
+</div>
+
+</div>
+
 <div class="image-row" style="display:flex;gap:8px;align-items:center;">
 
     <!-- Hidden input (gallery) -->
@@ -963,6 +1036,23 @@ document.getElementById("formArea").innerHTML="";
 document.getElementById("addItemBtn").style.display = "block";
 
 document.getElementById("categoryControls").style.display = "flex";
+
+}
+
+function selectSpice(btn, spice){
+
+selectedSpice = spice;
+
+document.querySelectorAll(".spice-btn")
+.forEach(b=>{
+
+b.style.background="#eee";
+b.style.color="#222";
+
+});
+
+btn.style.background="#222";
+btn.style.color="white";
 
 }
 
@@ -1065,7 +1155,8 @@ price,
 description: desc,
 related,
 image: e.target.result,   // ✅ BASE64 STORED HERE
-hidden: false
+hidden: false,
+spice: selectedSpice
 });
 
 saveData();
@@ -1074,6 +1165,7 @@ renderCategories();
 closeForm();
 
 showToast("Item added");
+selectedSpice = "";
 
 };
 
@@ -1087,7 +1179,8 @@ price,
 description: desc,
 related,
 image: null,   // no image
-hidden: false
+hidden: false,
+spice: selectedSpice
 });
 
 saveData();
@@ -1096,6 +1189,7 @@ renderCategories();
 closeForm();
 
 showToast("Item added");
+selectedSpice = "";
 
 }
 }
