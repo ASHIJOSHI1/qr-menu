@@ -397,7 +397,30 @@ input, textarea {
 
 <hr style="border:none;border-top:1px solid #eee;margin:30px 0;">
 
-<h3>Featured Specials</h3>
+<div
+id="featuredToggle"
+onclick="toggleFeaturedSection()"
+style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+cursor:pointer;
+margin-bottom:10px;
+"
+>
+
+<h3 style="margin:0;">Featured Specials</h3>
+
+<span id="featuredArrow" style="
+font-size:18px;
+font-weight:bold;
+">
+▼
+</span>
+
+</div>
+
+<div id="featuredSectionBox">
 
 <div id="featuredList"></div>
 
@@ -606,6 +629,7 @@ let confirmAction=null;
 let editIndex=null;
 let featuredSpecials = JSON.parse(localStorage.getItem("featuredSpecials")) || [];
 let selectedSpice = "";
+let selectedJain = false;
 
 /* SAVE */
 
@@ -860,6 +884,8 @@ document.getElementById("categoryControls").style.display = "none";
 
 document.getElementById("addItemBtn").style.display = "none";
 
+document.getElementById("itemsList").style.display = "none";
+
 let options="";
 Object.keys(menuData).forEach(c=>{
 options+=`<option value="${c}">${c}</option>`;
@@ -943,6 +969,60 @@ cursor:pointer;
 font-weight:600;
 ">
 Spicy 🌶🌶
+</button>
+
+</div>
+
+</div>
+
+<div style="margin-bottom:14px;">
+
+<div style="
+font-size:14px;
+font-weight:600;
+margin-bottom:8px;
+text-align:left;
+">
+Jain Available
+</div>
+
+<div style="
+display:flex;
+gap:8px;
+">
+
+<button
+type="button"
+class="jain-btn active"
+onclick="selectJain(this,false)"
+style="
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#222;
+color:white;
+cursor:pointer;
+font-weight:600;
+">
+No
+</button>
+
+<button
+type="button"
+class="jain-btn"
+onclick="selectJain(this,true)"
+style="
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#eee;
+color:#222;
+cursor:pointer;
+font-weight:600;
+">
+Yes
 </button>
 
 </div>
@@ -1035,6 +1115,8 @@ document.getElementById("formArea").innerHTML="";
 
 document.getElementById("addItemBtn").style.display = "block";
 
+document.getElementById("itemsList").style.display = "block";
+
 document.getElementById("categoryControls").style.display = "flex";
 
 }
@@ -1044,6 +1126,23 @@ function selectSpice(btn, spice){
 selectedSpice = spice;
 
 document.querySelectorAll(".spice-btn")
+.forEach(b=>{
+
+b.style.background="#eee";
+b.style.color="#222";
+
+});
+
+btn.style.background="#222";
+btn.style.color="white";
+
+}
+
+function selectJain(btn, value){
+
+selectedJain = value;
+
+document.querySelectorAll(".jain-btn")
 .forEach(b=>{
 
 b.style.background="#eee";
@@ -1156,16 +1255,41 @@ description: desc,
 related,
 image: e.target.result,   // ✅ BASE64 STORED HERE
 hidden: false,
-spice: selectedSpice
+spice: selectedSpice,
+jainAvailable: selectedJain
 });
 
 saveData();
 renderItems();
+setTimeout(() => {
+
+    let rows = document.querySelectorAll("#itemsList .item-row");
+
+    let lastRow = rows[rows.length - 1];
+
+    if(lastRow){
+
+        lastRow.style.transform = "scale(1.02)";
+        lastRow.style.boxShadow = "0 12px 30px rgba(255,80,80,0.45)";
+        lastRow.style.borderRadius = "10px";
+        lastRow.style.transition = "0.35s ease";
+
+        setTimeout(() => {
+
+            lastRow.style.transform = "";
+            lastRow.style.boxShadow = "";
+
+        }, 900);
+
+    }
+
+}, 100);
 renderCategories();
 closeForm();
 
 showToast("Item added");
 selectedSpice = "";
+selectedJain = false;
 
 };
 
@@ -1180,11 +1304,35 @@ description: desc,
 related,
 image: null,   // no image
 hidden: false,
-spice: selectedSpice
+spice: selectedSpice,
+jainAvailable: selectedJain
 });
 
 saveData();
 renderItems();
+setTimeout(() => {
+
+    let rows = document.querySelectorAll("#itemsList .item-row");
+
+    let lastRow = rows[rows.length - 1];
+
+    if(lastRow){
+
+        lastRow.style.transform = "scale(1.02)";
+        lastRow.style.boxShadow = "0 12px 30px rgba(255,80,80,0.45)";
+        lastRow.style.borderRadius = "10px";
+        lastRow.style.transition = "0.35s ease";
+
+        setTimeout(() => {
+
+            lastRow.style.transform = "";
+            lastRow.style.boxShadow = "";
+
+        }, 900);
+
+    }
+
+}, 100);
 renderCategories();
 closeForm();
 
@@ -1346,6 +1494,28 @@ function renderFeaturedSpecials(){
     });
 
     lucide.createIcons();
+
+}
+
+function toggleFeaturedSection(){
+
+let box = document.getElementById("featuredSectionBox");
+let arrow = document.getElementById("featuredArrow");
+
+if(
+    box.style.display === "none" ||
+    box.style.display === ""
+){
+
+    box.style.display = "block";
+    arrow.innerText = "▼";
+
+}else{
+
+    box.style.display = "none";
+    arrow.innerText = "▶";
+
+}
 
 }
 
@@ -1719,6 +1889,9 @@ list.appendChild(row);
 
 renderCategories();
 renderFeaturedSpecials();
+
+document.getElementById("featuredSectionBox").style.display = "none";
+document.getElementById("featuredArrow").innerText = "▶";
 
 let cropper;
 let croppedBlob = null;
