@@ -546,6 +546,7 @@ let endX = 0;
 let orderList=[];
 let currentDish=null;
 let dishQty = 0;
+let selectedDishType = "Regular";
 
 function renderFeaturedSlider(){
 
@@ -819,9 +820,12 @@ function openDish(item,category){
 
 currentDish=item;
 
+selectedFoodType = "Regular";
+
 let panel=document.getElementById("dishPanel");
 
 dishQty = getItemQty(item.name) || 1;
+selectedDishType = "Regular";
 let qty = dishQty;
 
 let relatedHTML="";
@@ -856,7 +860,29 @@ ${item.image
 
 <div style="text-align:left">
 
-<h3 style="margin:0">${item.name}</h3>
+<div style="
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:10px;
+">
+
+<h3 style="margin:0">
+${item.name}
+</h3>
+
+${item.spice ? `
+<div style="
+font-size:12px;
+font-weight:600;
+color:#d84b4b;
+white-space:nowrap;
+">
+${item.spice}
+</div>
+` : ""}
+
+</div>
 
 <h2 style="
 margin:6px 0 4px 0;
@@ -885,20 +911,57 @@ ${item.description||""}
 
 <button class="panel-btn btn-red"
 style="width:84px;height:34px;padding:0"
-onclick="addDishToOrder('${item.name}',${item.price})">
+onclick="addDishToOrder('${item.name}',${item.price}, selectedDishType)">
 Add
 </button>
 
-${item.spice ? `
+${item.jainAvailable ? `
+
 <div style="
+display:flex;
+gap:8px;
 margin-top:8px;
+width:100%;
+">
+
+<button
+type="button"
+class="dish-type-btn"
+onclick="selectDishType(this,'Regular')"
+style="
+flex:1;
+padding:8px;
+border:none;
+border-radius:8px;
+background:#222;
+color:white;
 font-size:13px;
 font-weight:600;
-color:#ff6b6b;
-text-align:center;
+cursor:pointer;
 ">
-${item.spice}
+Regular
+</button>
+
+<button
+type="button"
+class="dish-type-btn"
+onclick="selectDishType(this,'Jain')"
+style="
+flex:1;
+padding:8px;
+border:none;
+border-radius:8px;
+background:#eee;
+color:#222;
+font-size:13px;
+font-weight:600;
+cursor:pointer;
+">
+Jain
+</button>
+
 </div>
+
 ` : ""}
 
 </div>
@@ -921,6 +984,23 @@ document.body.style.overflow="hidden";
 
 /* PANEL QTY */
 
+function selectDishType(btn, type){
+
+selectedDishType = type;
+
+document.querySelectorAll(".dish-type-btn")
+.forEach(b=>{
+
+b.style.background="#eee";
+b.style.color="#222";
+
+});
+
+btn.style.background="#222";
+btn.style.color="white";
+
+}
+
 function changeDishQty(val){
 
 dishQty += val;
@@ -933,10 +1013,14 @@ document.getElementById("dishQty").innerText = dishQty;
 
 /* GET ITEM QTY */
 
-function getItemQty(name){
+function getItemQty(name, type = "Regular"){
 
-let item=orderList.find(i=>i.name===name);
-return item?item.qty:0;
+let item = orderList.find(i =>
+    i.name === name &&
+    i.type === type
+);
+
+return item ? item.qty : 0;
 
 }
 
@@ -963,10 +1047,18 @@ orderList=orderList.filter(i=>i.name!==name);
 
 function addItem(name,price){
 
-let found=orderList.find(i=>i.name===name);
+let found = orderList.find(i =>
+    i.name === name &&
+    i.type === "Regular"
+);
 
 if(found) found.qty++;
-else orderList.push({name,price,qty:1});
+else orderList.push({
+name,
+price,
+qty:1,
+type:"Regular"
+});
 
 updateOrderBar();
 
@@ -984,14 +1076,22 @@ showToast("Added to order");
 
 }
 
-function addDishToOrder(name,price){
+function addDishToOrder(name,price,type){
 
 if(dishQty===0) dishQty=1;
 
-let found=orderList.find(i=>i.name===name);
+let found = orderList.find(i =>
+    i.name === name &&
+    i.type === type
+);
 
 if(found) found.qty+=dishQty;
-else orderList.push({name,price,qty:dishQty});
+else orderList.push({
+name,
+price,
+qty:dishQty,
+type:type || "Regular"
+});
 
 dishQty=0;
 
@@ -1046,7 +1146,9 @@ items.innerHTML+=`
 <div class="order-row">
 
 <div style="text-align:left">
-<div>${item.name}</div>
+<div>
+${item.name}${item.type === "Jain" ? " (Jain)" : ""}
+</div>
 </div>
 
 <div style="display:flex;align-items:center;gap:10px">
@@ -1123,7 +1225,9 @@ line.style.borderBottom="1px dashed #ccc";
 line.style.paddingBottom="6px";
 
 line.innerHTML = `
-<span>${item.qty} × ${item.name}</span>
+<span>
+${item.qty} × ${item.name}${item.type === "Jain" ? " (Jain)" : ""}
+</span>
 <span>₹${item.qty * item.price}</span>
 `;
 
