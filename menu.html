@@ -168,6 +168,8 @@ border-radius:14px;
 padding:10px 15px;
 margin:25px 0;
 box-shadow:0 4px 12px rgba(0,0,0,0.08);
+
+scroll-margin-top:120px;
 }
 
 .category-title{
@@ -855,8 +857,21 @@ ${item.image
 <div style="text-align:left">
 
 <h3 style="margin:0">${item.name}</h3>
-<p style="margin:4px 0;color:#666">${item.description||""}</p>
-<h2 style="margin:4px 0">₹${item.price}</h2>
+
+<h2 style="
+margin:6px 0 4px 0;
+font-size:20px;
+">
+₹${item.price}
+</h2>
+
+<p style="
+margin:4px 0;
+color:#666;
+line-height:1.4;
+">
+${item.description||""}
+</p>
 
 </div>
 
